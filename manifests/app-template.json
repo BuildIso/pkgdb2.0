@@ -1,0 +1,10 @@
+{
+    "package_name": "test",
+    "version": "0.0.0",
+    "description": "Lorem",
+    "architecture": "x64",
+    "url": "https://test.test/test.exe",
+    "hash_sha256": "1A2B3DTEEEEEES",
+    "license": "MIT",
+    "website": "https://test.test"
+}
