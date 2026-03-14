@@ -17,7 +17,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              labels: ['license-accepted']
+              labels: ['licensement-accepted']
             })
             
       - name: Confirm Agreement
@@ -28,5 +28,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: "Thank you! The license has been accepted. Label `license-accepted` added. ✅"
+              body: "Thank you! The license has been accepted. Label `licensement-accepted` added. ✅"
             })
