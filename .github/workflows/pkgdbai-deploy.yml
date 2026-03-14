@@ -10,6 +10,11 @@ jobs:
       contains(github.event.comment.body, '@pkgdbai deploy') && 
       (github.event.comment.author_association == 'OWNER' || github.event.comment.user.login == 'htmluser-hub')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+
     steps:
       - name: Checkout Main (Source)
         uses: actions/checkout@v4
@@ -24,25 +29,52 @@ jobs:
 
       - name: Update Existing pkg.json
         run: |
-          # 1. Définir la date au format ISO
           CURRENT_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           
-          # 2. Utiliser JQ pour modifier le fichier existant
-          # On prend le pkg.json existant, on met à jour la date/licence
-          # et on remplace la liste 'packages' par le contenu actuel du dossier manifests/
+          # JQ modifie le fichier existant, met à jour la licence/date et remplit les packages
           jq --arg date "$CURRENT_DATE" \
              --arg lic "licensement-accepted" \
              '.license = $lic | .last_update = $date | .packages = [inputs]' \
              gh-pages/pkg.json main/manifests/*.json > gh-pages/pkg_temp.json
           
-          # 3. Remplacer l'ancien fichier par le nouveau
           mv gh-pages/pkg_temp.json gh-pages/pkg.json
 
       - name: Commit and Push to GH-PAGES
+        id: push_step
         run: |
           cd gh-pages
           git config user.name "pkgdbai"
           git config user.email "pkgdbai@bot.local"
           git add pkg.json
-          # On commit seulement s'il y a des changements
-          git diff --quiet && git diff --staged --quiet || (git commit -m "🚀 Update: pkg.json modified by @${{ github.event.comment.user.login }}" && git push origin gh-pages)
+          if git diff --quiet && git diff --staged --quiet; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            git commit -m "🚀 Update: pkg.json modified by @${{ github.event.comment.user.login }}"
+            git push origin gh-pages
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Post Confirmation and Add Label
+        if: steps.push_step.outputs.changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Ajout du label pkg-added
+            await github.rest.issues.addLabels({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['pkg-added']
+            });
+
+            // Message de confirmation
+            const repoName = context.repo.repo;
+            const ownerName = context.repo.owner;
+            const deployUrl = `https://${ownerName}.github.io/${repoName}/pkg.json`;
+            
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `✅ **Deployment Successful!**\n\n@${context.actor}, the package database has been updated and the label \`pkg-added\` has been applied.\n\n🌐 **Live JSON:** [View pkg.json](${deployUrl})`
+            });
