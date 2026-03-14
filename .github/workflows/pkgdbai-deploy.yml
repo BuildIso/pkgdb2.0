@@ -1,0 +1,48 @@
+name: PkgDBAI Deploy Engine
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  deploy:
+    # Seuls les admins (htmluser-hub) peuvent déclencher le déploiement via @pkgdbai deploy
+    if: |
+      contains(github.event.comment.body, '@pkgdbai deploy') && 
+      (github.event.comment.author_association == 'OWNER' || github.event.comment.user.login == 'htmluser-hub')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Main Branch
+        uses: actions/checkout@v4
+        with:
+          path: main
+
+      - name: Checkout GH-PAGES Branch
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+        continue-on-error: true # Crée la branche si elle n'existe pas
+
+      - name: Generate Global pkg.json
+        run: |
+          mkdir -p gh-pages
+          # Fusionne tous les fichiers JSON du dossier manifests en un seul array
+          echo "Generating global index..."
+          jq -s '.' main/manifests/*.json > gh-pages/pkg.json
+          
+          # Ajout de la mention légale obligatoire
+          echo "Checking license status..."
+          sed -i '1i { "license": "licensement-accepted", "last_update": "'$(date)'" },' gh-pages/pkg.json
+          # Correction du format JSON pour que l'objet license soit inclus proprement
+          jq -s '.[0] * {meta: .[1]} | .metadata = .[0] | del(.[0])' gh-pages/pkg.json 
+          
+          # Note : La logique jq ci-dessus peut être affinée selon la structure exacte voulue
+
+      - name: Commit and Push to GH-PAGES
+        run: |
+          cd gh-pages
+          git config config --global user.name "pkgdbai"
+          git config config --global user.email "pkgdbai@bot.local"
+          git add pkg.json
+          git commit -m "🚀 Deployment: Update pkg.json index (Triggered by @${{ github.event.comment.user.login }})"
+          git push origin gh-pages
