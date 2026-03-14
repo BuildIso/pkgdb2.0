@@ -1,0 +1,20 @@
+name: PkgDBAI Welcome
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  welcome:
+    if: contains(github.event.issue.labels.*.name, 'new-package')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post license agreement
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: "Hello! I am @pkgdbai. Before we proceed, please: **Accept the MIT license**. \n\nReply with `@pkgdbai agree` to confirm."
+            })
