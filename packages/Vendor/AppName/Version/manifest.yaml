@@ -1,1 +1,9 @@
-
+Id: Vendor.AppName
+Version: 1.0.0
+Name: AppName
+Publisher: Vendor
+InstallerType: exe
+Installers:
+  - Architecture: x64
+    InstallerUrl: https://example.com/installer.exe
+    InstallerSha256: <hash>
