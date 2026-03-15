@@ -1,0 +1,79 @@
+name: Validate Manifest
+
+on:
+  pull_request:
+    paths:
+      - "packages/**"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install pyyaml requests
+
+      - name: Validate YAML syntax
+        run: |
+          python - <<EOF
+          import yaml, sys, glob
+          for file in glob.glob("packages/**/*.yaml", recursive=True):
+              try:
+                  yaml.safe_load(open(file, "r", encoding="utf-8"))
+              except Exception as e:
+                  print(f"Invalid YAML in {file}: {e}")
+                  sys.exit(1)
+          EOF
+
+      - name: Validate manifest schema
+        run: |
+          python - <<EOF
+          import yaml, sys, glob, os
+
+          required_fields = ["Id", "Version", "Name", "Publisher", "InstallerType", "Installers"]
+
+          for file in glob.glob("packages/**/*.yaml", recursive=True):
+              data = yaml.safe_load(open(file, "r", encoding="utf-8"))
+
+              for field in required_fields:
+                  if field not in data:
+                      print(f"Missing required field '{field}' in {file}")
+                      sys.exit(1)
+
+              vendor, app, version = file.split("/")[1:4]
+              if data["Id"] != f"{vendor}.{app}":
+                  print(f"Id mismatch in {file}")
+                  sys.exit(1)
+
+              if data["Version"] != version:
+                  print(f"Version mismatch in {file}")
+                  sys.exit(1)
+          EOF
+
+      - name: Validate installer URLs
+        run: |
+          python - <<EOF
+          import yaml, sys, glob, requests
+
+          for file in glob.glob("packages/**/*.yaml", recursive=True):
+              data = yaml.safe_load(open(file, "r", encoding="utf-8"))
+              for inst in data["Installers"]:
+                  url = inst["InstallerUrl"]
+                  try:
+                      r = requests.head(url, timeout=10)
+                      if r.status_code >= 400:
+                          print(f"Invalid URL in {file}: {url}")
+                          sys.exit(1)
+                  except Exception:
+                      print(f"URL unreachable in {file}: {url}")
+                      sys.exit(1)
+          EOF
