@@ -1,0 +1,38 @@
+name: Compute Installer Hash
+
+on:
+  pull_request:
+    paths:
+      - "packages/**"
+
+jobs:
+  compute:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install pyyaml requests
+
+      - name: Compute hash
+        run: |
+          python - <<EOF
+          import yaml, glob, hashlib, requests
+
+          for file in glob.glob("packages/**/*.yaml", recursive=True):
+              data = yaml.safe_load(open(file, "r", encoding="utf-8"))
+              for inst in data["Installers"]:
+                  url = inst["InstallerUrl"]
+                  print(f"Downloading: {url}")
+                  r = requests.get(url, timeout=20)
+                  sha = hashlib.sha256(r.content).hexdigest()
+                  print(f"SHA256 for {url}: {sha}")
+          EOF
