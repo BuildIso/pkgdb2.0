@@ -1,0 +1,20 @@
+name: PkgDBAI Register Welcome
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  welcome:
+    if: contains(github.event.issue.labels.*.name, 'regist-user')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ask for confirmation
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: "Do you want to create your account? \n\nReply with `@pkgdbai confirm` to proceed or `@pkgdbai no` to cancel."
+            })
