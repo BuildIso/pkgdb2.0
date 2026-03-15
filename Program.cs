@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -20,7 +20,7 @@ class Program
     private const string RepoName = "pkgdb2.0";
 
     private static readonly string LocalDir =
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), ".pkgdb2.0");
+    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".pkgdb2.0");
 
     private static readonly string LocalDbFile = Path.Combine(LocalDir, "pkgdblocal.json");
     private static readonly string LogFile = Path.Combine(LocalDir, "log.txt");
@@ -240,13 +240,17 @@ class Program
             return;
         }
 
-        var tempFile = Path.Combine(Path.GetTempPath(), $"{pkg.Name}_{pkg.Version}.bin");
+        var fileName = Path.GetFileName(new Uri(installer.InstallerUrl).AbsolutePath);
+        var installDir = Path.Combine(LocalDir, "apps", pkg.Vendor, pkg.Name, pkg.Version);
+        Directory.CreateDirectory(installDir);
+        var installPath = Path.Combine(installDir, fileName);
+
         Console.WriteLine($"Downloading installer: {installer.InstallerUrl}");
 
         using (var http = new HttpClient())
         {
             var data = await http.GetByteArrayAsync(installer.InstallerUrl);
-            await File.WriteAllBytesAsync(tempFile, data);
+            await File.WriteAllBytesAsync(installPath, data);
 
             var sha = ComputeSha256(data);
             Console.WriteLine($"Downloaded SHA256: {sha}");
@@ -260,7 +264,7 @@ class Program
             }
         }
 
-        Console.WriteLine($"Installer downloaded to: {tempFile}");
+        Console.WriteLine($"Installer downloaded to: {installPath}");
         await Log($"Installed {pkg.Name} {pkg.Version}");
 
         var local = LoadLocalDb();
