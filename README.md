@@ -6,3 +6,6 @@ To add a package, the easiest way is to first fork the repository. You must keep
 
 # how can I create my token? 
 To create your token, go to this link https://github.com/settings/tokens then click on generate a new token (classic). Check the repo box. The token name is not important, you can name it whatever you want.
+
+# Where is my exe after installing MyGame in pkgdb2.0?
+Go to the link that the terminal gave you (Installer downloaded to: ...), look for the name you installed, you will see a .bin (MyGame_VERSION.bin), but how to turn the .bin into a .exe is very simple! Change the extension from .bin to .exe
