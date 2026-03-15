@@ -1,0 +1,49 @@
+name: PkgDBAI Register Handler
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  handle-response:
+    if: contains(github.event.issue.labels.*.name, 'regist-user') && github.event.comment.user.type != 'Bot'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Process No
+        if: contains(github.event.comment.body, '@pkgdbai no')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.addLabels({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['No-Registed']
+            });
+
+      - name: Process Confirm
+        if: contains(github.event.comment.body, '@pkgdbai confirm')
+        env:
+          USERNAME: ${{ github.event.comment.user.login }}
+        run: |
+          mkdir -p manifests/users
+          echo "$USERNAME" > "manifests/users/$USERNAME"
+          git config user.name "pkgdbai"
+          git config user.email "pkgdbai@bot.local"
+          git add "manifests/users/$USERNAME"
+          git commit -m "Register user: $USERNAME"
+          git push origin main
+
+      - name: Add Success Label
+        if: contains(github.event.comment.body, '@pkgdbai confirm')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.addLabels({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['Registed']
+            });
