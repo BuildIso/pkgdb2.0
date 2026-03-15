@@ -1,0 +1,8 @@
+name: "Register User"
+description: "Request to be registered in the system"
+title: "Register: "
+labels: ["regist-user"]
+body:
+  - type: markdown
+    attributes:
+      value: "Click submit to start your registration process with @pkgdbai."
