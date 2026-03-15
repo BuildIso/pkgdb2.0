@@ -7,10 +7,15 @@ jobs:
   handle-response:
     if: contains(github.event.issue.labels.*.name, 'regist-user') && github.event.comment.user.type != 'Bot'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # --- CAS : RÉPONSE NO ---
       - name: Process No
         if: contains(github.event.comment.body, '@pkgdbai no')
         uses: actions/github-script@v7
@@ -23,8 +28,32 @@ jobs:
               labels: ['No-Registed']
             });
 
-      - name: Process Confirm
+      # --- CAS : RÉPONSE CONFIRM ---
+      - name: Check if user already exists
         if: contains(github.event.comment.body, '@pkgdbai confirm')
+        id: check_user
+        run: |
+          USERNAME="${{ github.event.comment.user.login }}"
+          if [ -f "manifests/users/$USERNAME" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Reply if already exists
+        if: steps.check_user.outputs.exists == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: "You are already registered."
+            })
+
+      - name: Create User File
+        if: steps.check_user.outputs.exists == 'false' && contains(github.event.comment.body, '@pkgdbai confirm')
         env:
           USERNAME: ${{ github.event.comment.user.login }}
         run: |
@@ -37,7 +66,7 @@ jobs:
           git push origin main
 
       - name: Add Success Label
-        if: contains(github.event.comment.body, '@pkgdbai confirm')
+        if: steps.check_user.outputs.exists == 'false' && contains(github.event.comment.body, '@pkgdbai confirm')
         uses: actions/github-script@v7
         with:
           script: |
