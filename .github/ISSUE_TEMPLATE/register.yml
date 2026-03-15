@@ -1,8 +1,15 @@
 name: "Register User"
 description: "Request to be registered in the system"
-title: "Register: "
+title: "Register: [Your Username]"
 labels: ["regist-user"]
 body:
   - type: markdown
     attributes:
-      value: "Click submit to start your registration process with @pkgdbai."
+      value: "Welcome! Please check the box below to start your registration with @pkgdbai."
+  - type: checkboxes
+    id: confirm_start
+    attributes:
+      label: "Registration Request"
+      options:
+        - label: "I want to start the registration process"
+          required: true
