@@ -1,12 +1,14 @@
 name: PkgDBAI Register Welcome
 on:
   issues:
-    types: [opened, labeled] # On ajoute 'labeled' au cas où
+    types: [opened]
 
 jobs:
   welcome:
-    # On vérifie si le label est présent, peu importe le moment
-    if: github.event.issue.labels.*.name != null && contains(github.event.issue.labels.*.name, 'regist-user')
+    # On déclenche si le titre contient "Register:" OU si le label est présent
+    if: |
+      startsWith(github.event.issue.title, 'Register:') || 
+      contains(github.event.issue.labels.*.name, 'regist-user')
     runs-on: ubuntu-latest
     permissions:
       issues: write
