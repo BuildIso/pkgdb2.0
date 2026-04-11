@@ -6,5 +6,11 @@
       "version": "v2026.6",
       "manifest": "https://buildiso.github.io/pkgdb2.0/packages/BuildIso/BuildIso/v2026.6/manifest.yaml"
     }
+    {
+      "name": "BuildIso",
+      "vendor": "BuildIso",
+      "version": "v2026.7",
+      "manifest": "https://buildiso.github.io/pkgdb2.0/packages/BuildIso/BuildIso/v2026.7/manifest.yaml"
+    }
   ]
 }
