@@ -1,0 +1,9 @@
+id: BuildIso.BuildIso
+version: v2026.7
+name: BuildIso
+publisher: BuildIso
+installerType: exe
+installers:
+  - architecture: x64
+    installerUrl: https://github.com/BuildIso/BuildIso/releases/download/v2026.7/BuildIso.exe
+    installerSha256: c1fb979badfd2f1449b9f68a5bdefd98aacb64fa2ab3577dd48266acb92568cb
