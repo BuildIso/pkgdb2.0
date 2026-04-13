@@ -18,15 +18,18 @@ jobs:
 
       - run: pip install pyyaml requests urllib3
 
-      - run: |
+      - name: Compute hash
+        run: |
           python - <<EOF
           import yaml, glob, hashlib, requests, urllib3
           urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
           for file in glob.glob("packages/**/*.yaml", recursive=True):
               data = yaml.safe_load(open(file, "r", encoding="utf-8"))
-              for inst in data["Installers"]:
-                  url = inst["InstallerUrl"]
+              lower = {k.lower(): v for k, v in data.items()}
+
+              for inst in lower["installers"]:
+                  url = inst["installerurl"]
                   r = requests.get(url, timeout=20, verify=False)
                   sha = hashlib.sha256(r.content).hexdigest()
                   print(f"{url}: {sha}")
