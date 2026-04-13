@@ -1,0 +1,9 @@
+﻿id: SysInternals.ZoomIt
+version: 1.0.0
+name: ZoomIt
+publisher: SysInternals
+installerType: exe
+installers:
+- architecture: x64
+  installerUrl: https://live.sysinternals.com/ZoomIt.exe
+  installerSha256: <hash>
