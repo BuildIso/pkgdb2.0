@@ -11,6 +11,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -18,16 +20,22 @@ jobs:
 
       - run: pip install pyyaml requests urllib3
 
+      - name: Get changed files
+        id: changes
+        run: |
+          echo "CHANGED_FILES=$(git diff --name-only origin/main...HEAD | grep '^packages/.*\.yaml$' || true)" >> $GITHUB_ENV
+
       - name: Compute hash
         run: |
           python - <<EOF
-          import yaml, glob, hashlib, requests, urllib3
+          import yaml, glob, hashlib, requests, urllib3, os
           urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-          for file in glob.glob("packages/**/*.yaml", recursive=True):
+          files = os.environ["CHANGED_FILES"].split()
+          if not files:
+              exit(0)
+          for file in files:
               data = yaml.safe_load(open(file, "r", encoding="utf-8"))
-              lower = {k.lower(): v for k, v in data.items()}
-
+              lower = {k.lower(): v for k,v in data.items()}
               for inst in lower["installers"]:
                   url = inst["installerurl"]
                   r = requests.get(url, timeout=20, verify=False)
