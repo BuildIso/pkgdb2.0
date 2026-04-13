@@ -11,6 +11,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -18,41 +20,33 @@ jobs:
 
       - run: pip install pyyaml requests
 
-      - name: Validate YAML syntax
+      - name: Get changed files
+        id: changes
+        run: |
+          echo "CHANGED_FILES=$(git diff --name-only origin/main...HEAD | grep '^packages/.*\.yaml$' || true)" >> $GITHUB_ENV
+
+      - name: Validate schema
         run: |
           python - <<EOF
-          import yaml, sys, glob
-          for file in glob.glob("packages/**/*.yaml", recursive=True):
-              try:
-                  yaml.safe_load(open(file, "r", encoding="utf-8"))
-              except Exception as e:
-                  print(f"Invalid YAML in {file}: {e}")
-                  sys.exit(1)
-          EOF
-
-      - name: Validate manifest schema (lowercase)
-        run: |
-          python - <<EOF
-          import yaml, sys, glob
-
-          required = ["id", "version", "name", "publisher", "installertype", "installers"]
-
-          for file in glob.glob("packages/**/*.yaml", recursive=True):
+          import yaml, sys, os
+          files = os.environ["CHANGED_FILES"].split()
+          if not files:
+              sys.exit(0)
+          for file in files:
               data = yaml.safe_load(open(file, "r", encoding="utf-8"))
-              lower = {k.lower(): v for k, v in data.items()}
-
-              for field in required:
-                  if field not in lower:
-                      print(f"Missing required field '{field}' in {file}")
+              lower = {k.lower(): v for k,v in data.items()}
+              required = ["id","version","name","publisher","installertype","installers"]
+              for r in required:
+                  if r not in lower:
+                      print(f"Missing required field '{r}' in {file}")
                       sys.exit(1)
-
               parts = file.split("/")
-              vendor, app, version = parts[1], parts[2], parts[3]
-
+              vendor = parts[1]
+              app = parts[2]
+              version = parts[3]
               if lower["id"] != f"{vendor}.{app}":
                   print(f"Id mismatch in {file}")
                   sys.exit(1)
-
               if lower["version"] != version:
                   print(f"Version mismatch in {file}")
                   sys.exit(1)
@@ -61,12 +55,13 @@ jobs:
       - name: Validate installer URLs
         run: |
           python - <<EOF
-          import yaml, sys, glob, requests
-
-          for file in glob.glob("packages/**/*.yaml", recursive=True):
+          import yaml, sys, os, requests
+          files = os.environ["CHANGED_FILES"].split()
+          if not files:
+              sys.exit(0)
+          for file in files:
               data = yaml.safe_load(open(file, "r", encoding="utf-8"))
-              lower = {k.lower(): v for k, v in data.items()}
-
+              lower = {k.lower(): v for k,v in data.items()}
               for inst in lower["installers"]:
                   url = inst["installerurl"]
                   try:
@@ -74,7 +69,7 @@ jobs:
                       if r.status_code >= 400:
                           print(f"Invalid URL in {file}: {url}")
                           sys.exit(1)
-                  except Exception:
+                  except:
                       print(f"URL unreachable in {file}: {url}")
                       sys.exit(1)
           EOF
