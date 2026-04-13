@@ -14,31 +14,29 @@ jobs:
         with:
           fetch-depth: 0
 
+      - run: git fetch origin main
+
+      - run: echo "CHANGED_FILES=$(git diff --name-only origin/main...HEAD | grep '^packages/.*\.yaml$' || true)" >> $GITHUB_ENV
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - run: pip install pyyaml requests urllib3
 
-      - name: Get changed files
-        id: changes
-        run: |
-          echo "CHANGED_FILES=$(git diff --name-only origin/main...HEAD | grep '^packages/.*\.yaml$' || true)" >> $GITHUB_ENV
-
-      - name: Compute hash
-        run: |
+      - run: |
           python - <<EOF
-          import yaml, glob, hashlib, requests, urllib3, os
-          urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+          import yaml, hashlib, requests, urllib3, os
+          urllib3.disable_warnings()
           files = os.environ["CHANGED_FILES"].split()
           if not files:
-              exit(0)
+              sys.exit(0)
           for file in files:
-              data = yaml.safe_load(open(file, "r", encoding="utf-8"))
+              data = yaml.safe_load(open(file))
               lower = {k.lower(): v for k,v in data.items()}
               for inst in lower["installers"]:
                   url = inst["installerurl"]
-                  r = requests.get(url, timeout=20, verify=False)
+                  r = requests.get(url, verify=False)
                   sha = hashlib.sha256(r.content).hexdigest()
                   print(f"{url}: {sha}")
           EOF
