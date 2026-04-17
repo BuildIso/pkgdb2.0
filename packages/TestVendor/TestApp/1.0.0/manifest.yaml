@@ -1,0 +1,9 @@
+﻿id: TestVendor.TestApp
+version: 1.0.0
+name: TestApp
+publisher: TestVendor
+installerType: exe
+installers:
+- architecture: x64
+  installerUrl: https://example.com/test.exe
+  installerSha256: <hash>
